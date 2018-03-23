@@ -60,6 +60,10 @@ class Pybot:
         else:
             bot.send_message(chat_id=update.message.chat_id, text="Si fueras Mario hasta te dejaba y todo")
 
+    def facha(bot, update):
+        bot.send_message(chat_id=update.message.chat_id, text="Faaaaaaacha")
+        bot.send_photo(chat_id=update.message.chat_id, photo="https://gaceta.es/wp-content/uploads/2017/07/franco_1937.jpg")
+
     def tetas(bot, update):
         print(len(Pybot.boobarray))
         if len(Pybot.boobarray) > 0:
@@ -104,6 +108,7 @@ class Pybot:
         echo_handler = MessageHandler(Filters.text, Pybot.echo)
         users_group_handler = MessageHandler(Filters.status_update.new_chat_members, Pybot.new_member)
         tetas_handler = CommandHandler('tetas', Pybot.tetas)
+        facha_handler = CommandHandler('facha', Pybot.facha)
 
         Pybot.dispatcher.add_handler(start_handler)
         Pybot.dispatcher.add_handler(help_handler)
@@ -111,6 +116,7 @@ class Pybot:
         Pybot.dispatcher.add_handler(torrent_handler)
         Pybot.dispatcher.add_handler(users_group_handler)
         Pybot.dispatcher.add_handler(tetas_handler)
+        Pybot.dispatcher.add_handler(facha_handler)
 
 
 
