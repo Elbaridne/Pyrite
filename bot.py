@@ -28,7 +28,7 @@ class Pybot:
         Pybot.updater.idle()
         Pybot.name = name
 
-    # Fetch method to populate an array with photo strings, you have to add multirredit here
+    # Fetch method to populate an arrmay with photo strings, you have to add multirredit here
     def fetch_reddit(busqueda):
         if len(Pybot.arrays[busqueda]) is 0:
             auth_reddit = Reddit(client_id='oy5ifWn5vvoDOg',
