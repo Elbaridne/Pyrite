@@ -20,7 +20,7 @@ class Pybot:
     updater = Updater(token=token)
     var = updater.bot.get_updates
     dispatcher = updater.dispatcher
-    arrays = {"gatos": [], "tetas": []}
+    arrays = {"gatos": [], "tetas": [], "culos": []}
 
     def __init__(self, name):
         Pybot.handlers(self)
@@ -37,7 +37,8 @@ class Pybot:
                                  user_agent='pyrite',
                                  username=reddit_user)
             mreddit = {"tetas": auth_reddit.multireddit('Endirable', 'boobs'),
-                       "gatos": auth_reddit.multireddit('Endirable', 'cats')}
+                       "gatos": auth_reddit.multireddit('Endirable', 'cats'),
+                       "culos": auth_reddit.multireddit('Endirable', 'booty')}
 
             postdata = mreddit[busqueda].hot()
             for submission in postdata:
@@ -56,6 +57,10 @@ class Pybot:
     def tetas(bot, update):
         Pybot.fetch_reddit('tetas')
         bot.send_photo(chat_id=update.message.chat_id, photo=Pybot.arrays['tetas'].pop())
+
+    def culos(bot, update):
+        Pybot.fetch_reddit('culos')
+        bot.send_photo(chat_id=update.message.chat_id, photo=Pybot.arrays['culos'].pop())
 
 
 
@@ -119,13 +124,14 @@ class Pybot:
         start_handler = CommandHandler('start', Pybot.start)
         about_handler = CommandHandler('about', Pybot.about)
         torrent_handler = CommandHandler('torrent', Pybot.torrent)
+        facha_handler = CommandHandler('facha', Pybot.facha)
 
         # Reddit Handlers busqueda = subrredit to fetch. you need an entry on the dictionary {arrays}
         #                            and the multireddit added inside {mreddit}
 
         tetas_handler = CommandHandler('tetas', Pybot.tetas)
         gatos_handler = CommandHandler('gatos', Pybot.gatos)
-        facha_handler = CommandHandler('facha', Pybot.facha)
+        culo_handler = CommandHandler('culos', Pybot.culos)
 
         # Mensage Listeners
 
@@ -142,6 +148,7 @@ class Pybot:
         Pybot.dispatcher.add_handler(tetas_handler)
         Pybot.dispatcher.add_handler(gatos_handler)
         Pybot.dispatcher.add_handler(facha_handler)
+        Pybot.dispatcher.add_handler(culo_handler)
 
 
 if __name__ == '__main__':
