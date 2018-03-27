@@ -6,7 +6,5 @@ if __name__ == '__main__':
     bot = dispatch.bot
     print(bot.getMe)
 
-    while(True):
-        print("1. Comandos 2.Handlers 3.String")
-        input("Funcionalidad a probar")
+    bot.
 
