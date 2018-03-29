@@ -7,97 +7,106 @@ from urllib.parse import urlsplit
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
-with open("config", 'r') as f:
-    token = f.readline().strip("\n")
-    user_id = f.readline().strip("\n")
 
-with open("redditauth", 'r') as f:
-    reddit_secret = f.readline().strip("\n")
-    reddit_pass = f.readline().strip("\n")
-    reddit_user = f.readline().strip("\n")
+
 
 
 class Pybot:
+    with open("config", 'r') as f:
+        api_tele = f.readline().strip("\n")
+        tele_id = f.readline().strip("\n")
     name = 'Pyrite'
-    updater = Updater(token=token)
-    var = updater.bot.get_updates
+    updater = Updater(api_tele)
     dispatcher = updater.dispatcher
-    arrays = {"gatos": [], "tetas": [], "culos": [], "memes": []}
+    telegram_id = tele_id
+    map_r_mr = dict()
+    arrays = {'':[]}
+
+
 
     def __init__(self, name):
+
+        with open("redditauth", 'r') as f:
+            reddit_secret = f.readline().strip("\n")
+            reddit_pass = f.readline().strip("\n")
+            reddit_user = f.readline().strip("\n")
+
+        with open("multis", 'r') as f:
+            multi = []
+            for _ in range(4):
+                mul = f.readline().strip("\n")
+                multi.append(mul)
+
+
+
+        auth_reddit = Reddit(client_id='oy5ifWn5vvoDOg',
+                             client_secret=reddit_secret,
+                             password=reddit_pass,
+                             user_agent='pyrite',
+                             username=reddit_user)
+        for ele in multi:
+            Pybot.map_r_mr[ele] = auth_reddit.multireddit(reddit_user, ele)
+            Pybot.arrays[ele] = []
+
+
         Pybot.handlers(self)
         Pybot.updater.start_polling()
         Pybot.updater.idle()
         Pybot.name = name
 
-    # Fetch method to populate an array with photo strings, you have to add multirredit here
-    def fetch_reddit(busqueda):
+
+
+    def get_multi(busqueda):
         if len(Pybot.arrays[busqueda]) is 0:
-            auth_reddit = Reddit(client_id='oy5ifWn5vvoDOg',
-                                 client_secret=reddit_secret,
-                                 password=reddit_pass,
-                                 user_agent='pyrite',
-                                 username=reddit_user)
-            mreddit = {"tetas": auth_reddit.multireddit('Endirable', 'boobs'),
-                       "gatos": auth_reddit.multireddit('Endirable', 'cats'),
-                       "culos": auth_reddit.multireddit('Endirable', 'booty'),
-                       "meme": auth_reddit.multireddit('Endirable', 'memes')}
-            
-            postdata = mreddit[busqueda].hot()
+            postdata = Pybot.map_r_mr[busqueda].hot()
             for submission in postdata:
                 Pybot.arrays[busqueda].append(submission.url)
-        print(Pybot.arrays[busqueda])
-
-
 
     def send_content(bot, command, ch_id):
         search = str(command)
         cn = Pybot.arrays[search].pop(0)
 
-
         try:
             if "v.redd.it/" in cn:
                 cn = cn + "/DASH_1_2_M"
                 bot.send_video(chat_id=ch_id, video=cn)
-            if "gfycat.com/" in cn:
+                print("vreddit")
+            elif "gfycat.com/" in cn:
                 splitted = urlsplit(cn)
                 path = splitted.path
-
+                if "/detail/" in path:
+                    path = path.replace('/detail/', '')
                 parsed = "https://thumbs.gfycat.com" + path + "-size_restricted.gif"
                 bot.send_video(chat_id=ch_id, video=parsed)
-            elif ".gif" or ".gifv" in cn:
+            elif ".gifv" in cn:
+                cn = str(cn).replace('.gifv', '.mp4')
                 bot.send_video(chat_id=ch_id, video=cn)
-            elif "imgur.com/" or ".jpg" or ".jpeg" or "i.redd.it" in cn:
-                bot.send_photo(chat_id=ch_id, photo=cn)
+            elif ".gif" in cn:
+                bot.send_video(chat_id=ch_id, video=cn)
 
+            elif "imgur.com/" or ".jpg" or ".jpeg" or "i.redd.it/" in cn:
+                print("jpg or imgur")
+                bot.send_photo(chat_id=ch_id, photo=cn)
+            else:
+                Pybot.send_content(bot,command,ch_id)
         except error.BadRequest:
-            Pybot.send_content(bot, command, ch_id)
-            logging.log(msg="Error enviando contenido, {0} {1} {2}".format(command,ch_id,str(error.BadRequest)), level=logging.INFO)
+            logging.log(msg="Error enviando {0} {1} {2}".format(command, ch_id, cn), level=logging.INFO)
 
         except error.TimedOut:
-            bot.send_message(chat_id=ch_id, text="Whoops... perdón por la espera, algo no va bien")
-
-
-
-
-
+            bot.send_message(chat_id=ch_id, text="Algo no ha ido bien, prueba /{0} otra vez".format(command))
 
     # Command method to fetch images and send them to group
-    def gatos(bot, update):
-        Pybot.fetch_reddit('gatos')
-        Pybot.send_content(bot, 'gatos', update.message.chat_id)
 
-    def tetas(bot, update):
-        Pybot.fetch_reddit('tetas')
-        Pybot.send_content(bot, 'tetas', update.message.chat_id)
 
-    def culos(bot, update):
-        Pybot.fetch_reddit('culos')
-        Pybot.send_content(bot, 'culos', update.message.chat_id)
+    def fetch_reddit(bot, update):
 
-    def meme(bot, update):
-        Pybot.fetch_reddit('memes')
-        Pybot.send_content(bot, 'memes', update.message.chat_id)
+        fetch = update.message.text[1:]
+        chat_id = update.message.chat_id
+        Pybot.get_multi(fetch)
+        Pybot.send_content(bot, fetch, chat_id)
+
+
+
 
     # Commands
     def start(bot, update):
@@ -113,7 +122,7 @@ class Pybot:
 
     def torrent(bot, update):
         superid = update.message.chat_id
-        if str(superid) == str(user_id):
+        if str(superid) != None:
             bot.send_message(chat_id=update.message.chat_id, text="Not yet")
         else:
             bot.send_message(chat_id=update.message.chat_id, text="Not yet")
@@ -158,13 +167,12 @@ class Pybot:
         about_handler = CommandHandler('about', Pybot.about)
         torrent_handler = CommandHandler('torrent', Pybot.torrent)
         facha_handler = CommandHandler('facha', Pybot.facha)
-        meme_handler = CommandHandler('meme', Pybot.meme)
 
-        # Reddit Handlers busqueda = subrredit to fetch. you need an entry on the dictionary {arrays}
-        #                            and the multireddit added inside {mreddit}
-        tetas_handler = CommandHandler('tetas', Pybot.tetas)
-        gatos_handler = CommandHandler('gatos', Pybot.gatos)
-        culo_handler = CommandHandler('culos', Pybot.culos)
+
+        # Reddit Handlers
+        for key,dta in Pybot.map_r_mr.items():
+            a = CommandHandler(str(key),Pybot.fetch_reddit)
+            Pybot.dispatcher.add_handler(a)
 
         # Mensage Listeners
 
@@ -175,13 +183,10 @@ class Pybot:
         Pybot.dispatcher.add_handler(start_handler)
         Pybot.dispatcher.add_handler(about_handler)
         Pybot.dispatcher.add_handler(torrent_handler)
-        Pybot.dispatcher.add_handler(meme_handler)
-        Pybot.dispatcher.add_handler(culo_handler)
-        Pybot.dispatcher.add_handler(gatos_handler)
-        Pybot.dispatcher.add_handler(tetas_handler)
         Pybot.dispatcher.add_handler(facha_handler)
         Pybot.dispatcher.add_handler(users_group_handler)
         Pybot.dispatcher.add_handler(echo_handler)
+
 
 
 if __name__ == '__main__':
