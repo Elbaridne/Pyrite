@@ -1,69 +1,71 @@
 from telegram.ext import MessageHandler, CommandHandler, Filters, Updater
 from telegram import error
-import logging, random, re
+import logging, random, re, os, sys
 from praw import Reddit
 from urllib.parse import urlsplit
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO)
-
-
-
+                    level=logging.DEBUG)
 
 
 class Pybot:
-    with open("config", 'r') as f:
-        api_tele = f.readline().strip("\n")
-        tele_id = f.readline().strip("\n")
     name = 'Pyrite'
+    try:
+        with open("config", 'r') as f:
+            api_tele = f.readline().strip("\n")
+            tele_id = f.readline().strip("\n")
+    except IOError:
+        logging.log(logging.CRITICAL, "./config file missing parameters")
+
     updater = Updater(api_tele)
     dispatcher = updater.dispatcher
     telegram_id = tele_id
     map_r_mr = dict()
-    arrays = {'':[]}
-
-
+    arrays = {'': []}
 
     def __init__(self, name):
+        dirs = (os.listdir(os.getcwd()))
 
-        with open("redditauth", 'r') as f:
-            reddit_secret = f.readline().strip("\n")
-            reddit_pass = f.readline().strip("\n")
-            reddit_user = f.readline().strip("\n")
+        if "redditauth" in dirs:
+            with open("redditauth", 'r') as f:
+                reddit = dict()
+                try:
+                    reddit["secret"] = f.readline().strip("\n").lstrip("secret: ")
+                    reddit["pass"] = f.readline().strip("\n").lstrip("api user pass: ")
+                    reddit["user"] = f.readline().strip("\n").lstrip("api user: ")
+                except Exception:
+                    logging.log(logging.WARNING, "redditauth bad configuration")
+                    sys.exit
 
-        with open("multis", 'r') as f:
-            multi = []
-            for _ in range(4):
-                mul = f.readline().strip("\n")
-                multi.append(mul)
+            auth_reddit = Reddit(client_id='oy5ifWn5vvoDOg', client_secret=reddit["secret"],
+                                 username=reddit["user"], password=reddit["pass"],
+                                 user_agent='pyrite', )
+        else:
+            raise FileNotFoundError("redditauth missing")
 
+        self.name = name
 
+        if "multis" in dirs:
+            with open("multis", 'r') as f:
+                multi = f.readlines()
+            for ele in multi:
+                Pybot.map_r_mr[ele] = auth_reddit.multireddit(reddit["user"], ele)
+                Pybot.arrays[ele] = []
+        else:
+            logging.log(logging.WARNING, "missing multis file, bot will work without reddit fetching commands")
 
-        auth_reddit = Reddit(client_id='oy5ifWn5vvoDOg',
-                             client_secret=reddit_secret,
-                             password=reddit_pass,
-                             user_agent='pyrite',
-                             username=reddit_user)
-        for ele in multi:
-            Pybot.map_r_mr[ele] = auth_reddit.multireddit(reddit_user, ele)
-            Pybot.arrays[ele] = []
-
-
-        Pybot.handlers(self)
-        Pybot.updater.start_polling()
-        Pybot.updater.idle()
-        Pybot.name = name
-
-
-
-    def get_multi(busqueda):
-        if len(Pybot.arrays[busqueda]) is 0:
-            postdata = Pybot.map_r_mr[busqueda].hot()
-            for submission in postdata:
-                Pybot.arrays[busqueda].append(submission.url)
+        self.handlers()
+        self.updater.start_polling()
+        self.updater.idle()
+        self.name = name
 
     def send_content(bot, command, ch_id):
         search = str(command)
+        if len(Pybot.arrays[search]) is 0:
+            postdata = Pybot.map_r_mr[search].hot()
+            for submission in postdata:
+                Pybot.arrays[search].append(submission.url)
+
         cn = Pybot.arrays[search].pop(0)
 
         try:
@@ -88,7 +90,7 @@ class Pybot:
                 print("jpg or imgur")
                 bot.send_photo(chat_id=ch_id, photo=cn)
             else:
-                Pybot.send_content(bot,command,ch_id)
+                Pybot.send_content(bot, command, ch_id)
         except error.BadRequest:
             logging.log(msg="Error enviando {0} {1} {2}".format(command, ch_id, cn), level=logging.INFO)
 
@@ -97,17 +99,17 @@ class Pybot:
 
     # Command method to fetch images and send them to group
 
-
     def fetch_reddit(bot, update):
-
-        fetch = update.message.text[1:]
+        fetch_command = update.message.text[1:]
         chat_id = update.message.chat_id
-        Pybot.get_multi(fetch)
-        Pybot.send_content(bot, fetch, chat_id)
+        Pybot.send_content(bot, fetch_command, chat_id)
 
+    def list_multis(bot, update):
+        key = ''
+        for multis in Pybot.map_r_mr.keys():
+            key = key + ("/" + multis + "\n")
 
-
-
+        bot.send_message(chat_id=update.message.chat_id, message=key)
     # Commands
     def start(bot, update):
         bot.send_message(chat_id=update.message.chat_id, text="Hola, soy {0} y sé un poco sobre \n".format(Pybot.name) +
@@ -170,10 +172,10 @@ class Pybot:
 
 
         # Reddit Handlers
-        for key,dta in Pybot.map_r_mr.items():
-            a = CommandHandler(str(key),Pybot.fetch_reddit)
+        for key, dta in Pybot.map_r_mr.items():
+            a = CommandHandler(str(key), Pybot.fetch_reddit)
             Pybot.dispatcher.add_handler(a)
-
+        list_multis_handler = CommandHandler('listmulti', Pybot.list_multis)
         # Mensage Listeners
 
         echo_handler = MessageHandler(Filters.text, Pybot.echo)
@@ -186,7 +188,7 @@ class Pybot:
         Pybot.dispatcher.add_handler(facha_handler)
         Pybot.dispatcher.add_handler(users_group_handler)
         Pybot.dispatcher.add_handler(echo_handler)
-
+        Pybot.dispatcher.add_handler(list_multis_handler)
 
 
 if __name__ == '__main__':

@@ -6,5 +6,5 @@ if __name__ == '__main__':
     bot = dispatch.bot
     print(bot.getMe)
 
-    bot.
+
 
