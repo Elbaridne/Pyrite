@@ -30,16 +30,18 @@ class Pybot:
             with open("redditauth", 'r') as f:
                 reddit = dict()
                 try:
-                    reddit["secret"] = f.readline().strip("\n").lstrip("secret: ")
-                    reddit["pass"] = f.readline().strip("\n").lstrip("api user pass: ")
-                    reddit["user"] = f.readline().strip("\n").lstrip("api user: ")
+                    reddit["secret"] = f.readline().strip("\n").lstrip("secret ")
+                    reddit["pass"] = f.readline().strip("\n")[14:]
+                    reddit["user"] = f.readline().strip("\n")[9:]
+                    print(reddit)
                 except Exception:
                     logging.log(logging.WARNING, "redditauth bad configuration")
                     sys.exit
 
             auth_reddit = Reddit(client_id='oy5ifWn5vvoDOg', client_secret=reddit["secret"],
-                                 username=reddit["user"], password=reddit["pass"],
+                                 password=reddit["pass"], username=reddit["user"],
                                  user_agent='pyrite', )
+            print(auth_reddit.user.me())
         else:
             raise FileNotFoundError("redditauth missing")
 
@@ -48,7 +50,10 @@ class Pybot:
         if "multis" in dirs:
             with open("multis", 'r') as f:
                 multi = f.readlines()
+
             for ele in multi:
+                ele = ele.strip("\n")
+
                 Pybot.map_r_mr[ele] = auth_reddit.multireddit(reddit["user"], ele)
                 Pybot.arrays[ele] = []
         else:
@@ -109,7 +114,7 @@ class Pybot:
         for multis in Pybot.map_r_mr.keys():
             key = key + ("/" + multis + "\n")
 
-        bot.send_message(chat_id=update.message.chat_id, message=key)
+        bot.send_message(chat_id=update.message.chat_id, text=key)
     # Commands
     def start(bot, update):
         bot.send_message(chat_id=update.message.chat_id, text="Hola, soy {0} y sé un poco sobre \n".format(Pybot.name) +
