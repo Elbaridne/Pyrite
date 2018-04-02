@@ -3,6 +3,7 @@ from telegram import error
 import logging, random, re, os, sys
 from praw import Reddit
 from urllib.parse import urlsplit
+import meme_gen
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.DEBUG)
@@ -41,7 +42,7 @@ class Pybot:
             auth_reddit = Reddit(client_id='oy5ifWn5vvoDOg', client_secret=reddit["secret"],
                                  password=reddit["pass"], username=reddit["user"],
                                  user_agent='pyrite', )
-            print(auth_reddit.user.me())
+            
         else:
             raise FileNotFoundError("redditauth missing")
 
@@ -156,8 +157,9 @@ class Pybot:
 
             else:
                 randomized = randomized + num.lower()
+        meme_gen.mocked(randomized)
+        bot.send_photo(chat_id=update.message.chat_id, photo=open('mocked.jpg', 'rb'))
 
-        bot.send_message(chat_id=update.message.chat_id, text=randomized)
 
     # Save new_member id and name in a plain text
 
