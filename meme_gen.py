@@ -1,7 +1,8 @@
 from PIL import Image, ImageDraw, ImageFont
 
 
-def mocked(string):
+
+def mocked(string,output):
     image = Image.open("mock.jpg", 'r')
     width, height = image.size
     rell,tamstri = 0,0
@@ -14,11 +15,12 @@ def mocked(string):
         drawing.text((off[0] + pix, off[1] + pix), estring, font=argfont, fill='black')
 
     if isinstance(string, u"".__class__):
-        offset = [20, height - height // 5]
+
         tamstri = len(string)
         rell = width // (int((tamstri) / 2.12))
-        if rell > 90:
+        if rell > 200:
             rell = height // int(tamstri)
+        offset = [width//rell, height - rell - 10]
         font = ImageFont.FreeTypeFont('impact.ttf', size=rell)
         draw_shadow(offset,font,string,2)
         drawing.text(offset, string, font=font)
@@ -39,5 +41,4 @@ def mocked(string):
             draw_shadow(offset,font,line,2)
             drawing.text(offset, line, font=font)
             offset[1] += rell
-    image.save("mocked.jpg")
-
+    image.save(output)

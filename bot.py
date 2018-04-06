@@ -157,8 +157,8 @@ class Pybot:
 
             else:
                 randomized = randomized + num.lower()
-        meme_gen.mocked(randomized)
-        bot.send_photo(chat_id=update.message.chat_id, photo=open('mocked.jpg', 'rb'))
+        meme_gen.mocked(randomized,"memed.jpg")
+        bot.send_photo(chat_id=update.message.chat_id, photo=open('memed.jpg', 'rb'))
 
 
     # Save new_member id and name in a plain text
