@@ -53,9 +53,10 @@ class Pybot:
 
             for ele in multi:
                 ele = ele.strip("\n")
-
                 Pybot.map_r_mr[ele] = auth_reddit.multireddit(reddit["user"], ele)
                 Pybot.arrays[ele] = []
+                Pybot.arrays[ele + "top"] = []
+
         else:
             logging.log(logging.WARNING, "missing multis file, bot will work without reddit fetching commands")
 
@@ -65,20 +66,23 @@ class Pybot:
         self.name = name
 
     def send_content(bot, command, ch_id, args):
+
         if args:
-            if args == 'top':
-                logging.log(logging.INFO, "{0} top".format(command))
-                command += 'top'
-                if len(Pybot.arrays[command]) is 0:
+            if args[0] == 'top':
+                if len(Pybot.arrays[command+"top"]) is 0:
+                    print("Getting top")
                     postdata = Pybot.map_r_mr[command].top()
                     for submission in postdata:
-                        Pybot.arrays[command].append(submission.url)
-            else:
-                 if len(Pybot.arrays[command]) is 0:
-                    postdata = Pybot.map_r_mr[command].hot()
-                    for submission in postdata:
-                        Pybot.arrays[command].append(submission.url)
+                        print(submission)
+                        Pybot.arrays[command+"top"].append(submission.url)
+                command += 'top'
 
+        if len(Pybot.arrays[command]) is 0:
+            postdata = Pybot.map_r_mr[command].hot()
+            for submission in postdata:
+                Pybot.arrays[command].append(submission.url)
+
+        print(command)
         cn = Pybot.arrays[command].pop(0)
 
         try:
@@ -112,10 +116,12 @@ class Pybot:
 
     # Command method to fetch images and send them to group
 
-    def fetch_reddit(bot, update):
-        fetch_command = update.message.text[1:]
+    def fetch_reddit(bot, update, args):
+        fetch_command = update.message.text[1:].split(" ")
+
+
         chat_id = update.message.chat_id
-        Pybot.send_content(bot, fetch_command, chat_id)
+        Pybot.send_content(bot, fetch_command[0], chat_id, args)
 
     def list_multis(bot, update):
         key = ''
@@ -125,7 +131,7 @@ class Pybot:
         bot.send_message(chat_id=update.message.chat_id, text=key)
 
     def refresh_reddit(bot, update):
-        Pybot.arrays = {key:'' for key in Pybot.arrays}
+        Pybot.arrays = {key:[] for key in Pybot.arrays}
         bot.send_message(chat_id=update.message.chat_id, text="Contenido fresco!")
 
     # Commands
@@ -195,7 +201,7 @@ class Pybot:
             a = CommandHandler(str(key), Pybot.fetch_reddit, pass_args=True)
             Pybot.dispatcher.add_handler(a)
         list_multis_handler = CommandHandler('listmulti', Pybot.list_multis)
-        Pybot.dispatcher.add_handler(CommandHandler('refresh'), Pybot.refresh_reddit)
+        Pybot.dispatcher.add_handler(CommandHandler('refresh', Pybot.refresh_reddit))
         # Mensage Listeners
 
         echo_handler = MessageHandler(Filters.text, Pybot.echo)
