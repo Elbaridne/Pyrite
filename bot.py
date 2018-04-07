@@ -5,8 +5,7 @@ from praw import Reddit
 from urllib.parse import urlsplit
 import meme_gen
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.DEBUG)
+
 
 
 class Pybot:
@@ -65,14 +64,22 @@ class Pybot:
         self.updater.idle()
         self.name = name
 
-    def send_content(bot, command, ch_id):
-        search = str(command)
-        if len(Pybot.arrays[search]) is 0:
-            postdata = Pybot.map_r_mr[search].hot()
-            for submission in postdata:
-                Pybot.arrays[search].append(submission.url)
+    def send_content(bot, command, ch_id, args):
+        if args:
+            if args == 'top':
+                logging.log(logging.INFO, "{0} top".format(command))
+                command += 'top'
+                if len(Pybot.arrays[command]) is 0:
+                    postdata = Pybot.map_r_mr[command].top()
+                    for submission in postdata:
+                        Pybot.arrays[command].append(submission.url)
+            else:
+                 if len(Pybot.arrays[command]) is 0:
+                    postdata = Pybot.map_r_mr[command].hot()
+                    for submission in postdata:
+                        Pybot.arrays[command].append(submission.url)
 
-        cn = Pybot.arrays[search].pop(0)
+        cn = Pybot.arrays[command].pop(0)
 
         try:
             if "v.redd.it/" in cn:
@@ -101,7 +108,7 @@ class Pybot:
             logging.log(msg="Error enviando {0} {1} {2}".format(command, ch_id, cn), level=logging.INFO)
 
         except error.TimedOut:
-            bot.send_message(chat_id=ch_id, text="Algo no ha ido bien, prueba /{0} otra vez".format(command))
+            Pybot.send_content(bot, command, ch_id)
 
     # Command method to fetch images and send them to group
 
@@ -116,13 +123,18 @@ class Pybot:
             key = key + ("/" + multis + "\n")
 
         bot.send_message(chat_id=update.message.chat_id, text=key)
+
+    def refresh_reddit(bot, update):
+        Pybot.arrays = {key:'' for key in Pybot.arrays}
+        bot.send_message(chat_id=update.message.chat_id, text="Contenido fresco!")
+
     # Commands
     def start(bot, update):
         bot.send_message(chat_id=update.message.chat_id, text="Hola, soy {0} y sé un poco sobre \n".format(Pybot.name) +
-                                                              "/torrent - Búsqueda de magnets en TPB \n" +
-                                                              "/tetas - Más cómodo que Reddit (!) \n" +
-                                                              "/gatos - MUCHO más cómodo que Reddit (!!)\n" +
+                                                              "Prueba a enviarme un mensaje por privado\n" +
+                                                              "/listmulti - Lista de Multirredits \n" +
                                                               "/facha - Para esos moments aleatorio de fascismo \n" +
+                                                              "/torrent - Buscador de magnets en TPB"
                                                               "/about - Sobre {0}".format(Pybot.name))
 
     def about(bot, update):
@@ -180,9 +192,10 @@ class Pybot:
 
         # Reddit Handlers
         for key, dta in Pybot.map_r_mr.items():
-            a = CommandHandler(str(key), Pybot.fetch_reddit)
+            a = CommandHandler(str(key), Pybot.fetch_reddit, pass_args=True)
             Pybot.dispatcher.add_handler(a)
         list_multis_handler = CommandHandler('listmulti', Pybot.list_multis)
+        Pybot.dispatcher.add_handler(CommandHandler('refresh'), Pybot.refresh_reddit)
         # Mensage Listeners
 
         echo_handler = MessageHandler(Filters.text, Pybot.echo)
