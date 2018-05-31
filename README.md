@@ -2,10 +2,11 @@
 By Mario (Elbaridne) mariomblu.com
 
 ### Features:
-* Multireddit GIF , Image and Video handling
-* Spongebob mock meme if you chat privately with the bot or reply to a message in a group
-* MP3 scraping
-* /facha (internal joke for my friends)
+* ### Reddit Fetching
+* Image, GIF, Video without taking up space in your phone! 
+* Spongebob Mock meme
+* MP3 link scraping 
+
 
 
 
